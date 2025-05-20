@@ -1,27 +1,82 @@
 ---
-title: "Project"
-format: html
-editor: visual
-embed-resources: true
+title: "Final Project"
+author: "Karisa Kopecek, Theo S., Treasure Joyce & Brooke Wallasch"
+format: 
+  html:
+    embed-resources: true
+    code-tools: true
+    toc: true
+    html-table-processing: none
+editor: source
+execute: 
+  error: true
+  echo: true
+  message: false
+  warning: false
 ---
 
-## Quarto
+# 1. Introduction
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+## Packages
 
 ```{r}
-1 + 1
+library(tidyverse)
+library(knitr)
 ```
 
-You can add options to executable code like this
+## Data
+
+Data from GapMinder
+
+Explanatory Variable: CO2 Total Emissions (<http://gapm.io/dco2_consumption_historic>)
+
+Response Variable: Storm affected annual number (<https://www.emdat.be/database>)
 
 ```{r}
-#| echo: false
-2 * 2
+emissions <- read_csv("co2_cons.csv")
+#194 rows (countries), 224 columns(1800 - 2022)
+
+storms <- read_csv("storm_affected_annual_number.csv")
+#179 rows (countries), 40 columns (1970 - 2008)
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+# 2. Data Cleaning
+
+```{r}
+#pivot longer (each row identified by a country and a year)
+emissions_long <- emissions |> 
+  mutate(across(.cols = '1800':'2022',
+                .fns = ~ as.numeric(.x, na.rm = TRUE))) |> 
+  pivot_longer(cols = '1800':'2022', 
+               names_to = "year", 
+               values_to = "emissions")
+
+storms_long <- storms |> 
+  pivot_longer(cols = '1970':'2008', 
+               names_to = "year", 
+               values_to = "people_affected")
+
+#left_join with storm as left dataset (more restricted)
+df.clean <- storms_long |> 
+  left_join(emissions_long, join_by(country, year)) |> 
+  group_by()
+
+```
+
+# 3. Modeling and Relationship Between \_\_\_ and \_\_\_
+
+```{r}
+
+```
+
+# 4. Cross-Validation
+
+```{r}
+
+```
+
+# 5. Conclusion
+
+```{r}
+
+```
