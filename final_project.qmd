@@ -1,5 +1,5 @@
 ---
-title: "Final Project"
+title: "Relationship Between Sustainability (SDI) and GDP per Capita"
 author: "Karisa Kopecek, Theo S., Treasure Joyce & Brooke Wallasch"
 format: 
   html:
@@ -17,16 +17,20 @@ execute:
 
 # 1. Introduction
 
+## Hypothesis
+
+Countries with higher GDP will have higher sustainability scores.
+
+## Objectives
+
+1.  
+
 ## Packages
 
 ```{r}
 library(tidyverse)
 library(knitr)
 ```
-
-## Hypothesis
-
-Countries with higher GDP will have higher sustainability scores.
 
 ## Data
 
@@ -60,17 +64,26 @@ gdp_long <- gdp |>
                names_to = "year", 
                values_to = "gdp")
 
-#left_join
+#left_join and removing rows missing sdi or gdp
 df.clean <- sustainability.long |> 
   left_join(gdp_long, join_by(country, year)) |> 
-  group_by()
+  filter(!if_any(.cols = sdi:gdp, .fns = ~is.na(.x)))
 
 ```
 
-# 3. Modeling and Relationship Between \_\_\_ and \_\_\_
+# 3. Modeling and Relationship Between Sustainability (SDI) and GDP per capita
 
 ```{r}
-
+#preliminary scatterplot
+df.clean |> 
+  group_by(country) |> 
+  summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |> 
+  ggplot(aes(x = mean.gdp, y = mean.sdi))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  theme_classic() +
+  labs(x = "GDP per Capita (2017 dollars)", y = "", subtitle = "Sustainable Development Index (SDI)", title = "Relationship between GDP per capita and Sustainability (SDI) \n from 1990 to 2019")
+  
 ```
 
 # 4. Cross-Validation
