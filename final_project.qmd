@@ -27,7 +27,7 @@ We came up with this hypothesis based on news articles we have seen throughout v
 
 1.  Analyze the relationship between GDP and sustainability scores across different countries
 
-2.  Evaluate Outliers in the data
+2.  Evaluate outliers in the data
 
 3.  Ultimately asses whether sustainability outcomes are better or worse depending on a country's GDP
 
@@ -36,15 +36,16 @@ We came up with this hypothesis based on news articles we have seen throughout v
 ```{r}
 library(tidyverse)
 library(knitr)
+library(kableExtra)
 ```
 
 ## Data
 
-**Data pulled from GapMinder**
+We extracted two datasets from GapMinder on May 20, 2025.
 
-**Explanatory Variable: GDP per Capita (<http://gapm.io/dgdpcap_cppp>) from 1800-2022**
+**Explanatory Variable:** GDP per Capita (<http://gapm.io/dgdpcap_cppp>) from 1800-2022
 
-**Response Variable: Sustainable Development Index (<http://gapm.io/dsdi>) from 1990-2019**
+**Response Variable:** Sustainable Development Index (<http://gapm.io/dsdi>) from 1990-2019
 
 *The original data for GDP per Capita came from:*
 
@@ -85,9 +86,26 @@ df.clean <- sustainability.long |>
 
 ```
 
+**Dataset Description:**
+
+Our dataset includes four columns (country, year, sdi and gdp) with 2,306 observations. Each observation is identified by a country and year (e.g. Ethiopia, 2018).
+
+```{r}
+df.clean |> 
+  group_by(country) |> 
+  summarize(across(.cols = year:gdp, 
+                   .fns = ~range(.x)), 
+           across(.cols = year:gdp, 
+                   .fns = ~paste(.x, collapse = "-"))) |> 
+  unique() |> 
+  kable(col.names = c("Country", "Year Range", "SDI Range", "GDP Range")) |> 
+  kable_styling(bootstrap_options = "striped")
+  
+```
+
 **Data cleaning process and decisions that may impact the analysis:**
 
-I dropped rows missing sdi or gdp data, and these missing values likely occurred due to the SDI dataset covering only 1990–2019, whereas the GDP dataset spans 1800–2100. So, GDP values may exist for years where SDI data does not, and vice versa.
+We dropped rows missing sdi or gdp data, and these missing values likely occurred due to the SDI dataset covering only 1990–2019, whereas the GDP dataset spans 1800–2100. So, GDP values may exist for years where SDI data does not, and vice versa.
 
 Also, data cleaning removing missing sdi or gdp data mainly affected small or politically unstable countries including: Angola, Antigua, Bhutan, Eritria, Lebanon, Nigeria, Serbia, Suriname, Turkmenistan, and Vanatu (Belarus, North Korea not included at all in the data).
 
