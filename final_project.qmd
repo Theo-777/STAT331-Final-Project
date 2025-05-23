@@ -1,6 +1,6 @@
 ---
 title: "Relationship Between Sustainability (SDI) and GDP per Capita"
-author: "Karisa Kopecek, Theo S., Treasure Joyce & Brooke Wallasch"
+author: "Karisa Kopecek, Theo Sprouse, Treasure Joyce & Brooke Wallasch"
 format: 
   html:
     embed-resources: true
@@ -66,6 +66,13 @@ gdp <- read_csv("gdp_pcap.csv")
 # 2. Data Cleaning
 
 ```{r}
+#helper function for values formatted as ex: "1.1k"
+convert_k_to_numeric <- function(x) {
+  x <- gsub("k", "e3", x)
+  as.numeric(x)
+}
+
+
 #pivot longer (each row identified by a country and a year)
 sustainability.long <- sustainability |> 
   mutate(across(.cols = '1990':'2019', .fns = ~as.numeric(.x, na.rm = TRUE))) |> 
@@ -74,7 +81,7 @@ sustainability.long <- sustainability |>
                values_to = "sdi")
 
 gdp_long <- gdp |> 
-  mutate(across(.cols = '1800':'2100', .fns = ~as.numeric(.x, na.rm = TRUE))) |> 
+  mutate(across(.cols = '1800':'2100', .fns = ~convert_k_to_numeric(.x))) |> 
   pivot_longer(cols = '1800':'2100', 
                names_to = "year", 
                values_to = "gdp")
@@ -83,7 +90,6 @@ gdp_long <- gdp |>
 df.clean <- sustainability.long |> 
   left_join(gdp_long, join_by(country, year)) |> 
   filter(!if_any(.cols = sdi:gdp, .fns = ~is.na(.x)))
-
 ```
 
 **Dataset Description:**
