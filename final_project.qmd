@@ -111,7 +111,7 @@ df.clean |>
 
 **Data cleaning process and decisions that may impact the analysis:**
 
-We dropped rows missing sdi or gdp data, and these missing values likely occurred due to the SDI dataset covering only 1990–2019, whereas the GDP dataset spans 1800–2100. So, GDP values may exist for years where SDI data does not, and vice versa.
+We dropped rows missing sdi or gdp data, and these missing values likely occurred due to the SDI dataset covering only 1990–2019, whereas the GDP dataset spans 1800–2100. So, GDP values may exist for years where SDI data does not, and vice versa. The GDP dataset included hypothetical data until the year 2100. We did not want to focus on any hypothetical data and we wanted to ensure consistency across datasets and therefore did not include any years past 2019 and before 1990. When the GDP and SDI datasets were joined we constrained the data to match the years in the SDI dataset.
 
 Also, data cleaning removing missing sdi or gdp data mainly affected small or politically unstable countries including: Angola, Antigua, Bhutan, Eritria, Lebanon, Nigeria, Serbia, Suriname, Turkmenistan, and Vanatu (Belarus, North Korea not included at all in the data).
 
