@@ -89,12 +89,15 @@ gdp_long <- gdp |>
 #left_join and removing rows missing sdi or gdp
 df.clean <- sustainability.long |> 
   left_join(gdp_long, join_by(country, year)) |> 
-  filter(!if_any(.cols = sdi:gdp, .fns = ~is.na(.x))) 
+  filter(!if_any(.cols = sdi:gdp, .fns = ~is.na(.x))) |> 
+  mutate(year = as.numeric(year))
+
+str(df.clean)
 ```
 
 **Dataset Description:**
 
-Our dataset includes four columns (country, year, sdi and gdp) with 2,306 observations. Each observation is identified by a country and year (e.g. Ethiopia, 2018).
+Our dataset includes four columns (Country, Year, SDI and GDP) with 2,306 observations.  Each observation is identified by a country and year (e.g. Ethiopia, 2018). 
 
 ```{r}
 df.clean |> 
