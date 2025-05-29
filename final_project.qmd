@@ -214,3 +214,5 @@ model.fit <- c(total.variance, fitted.variance, R2) |>
 ```{r}
 
 ```
+
+# 6. Works Cited
