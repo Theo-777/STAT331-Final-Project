@@ -193,14 +193,14 @@ df.clean |>
 ## 2.2. Linear Regression
 
 ```{r}
-df.model <- df.clean |> 
+df.clean.model <- df.clean |> 
   group_by(country) |> 
   summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |>
   filter(mean.gdp > 20000)
 
-results <- lm(mean.sdi ~ mean.gdp, data = df.model)
+lm.model <- lm(mean.sdi ~ mean.gdp, data = df.model)
 
-summary(results) |> 
+summary(lm.model) |> 
   tidy() |> 
   mutate(p.value = pvalue(p.value)) |> #reformatting p-values (<0.001)
   kable(digits = 5, 
@@ -211,16 +211,43 @@ summary(results) |>
 
 Citation for formatting p-values using Scales package: <https://scales.r-lib.org/reference/label_pvalue.html>
 
+### Diagnostics
+
+```{r}
+#linear relationship
+
+#Independent observations
+#yes
+
+#Nortmally distributed residuals
+ggplot(data = lm.model,
+       aes(x = .resid))+
+  geom_histogram(aes(y = after_stat(density)))+
+  geom_density(color = "dodgerblue", 
+               lwd = 1.5)+
+  xlab("Residuals")
+
+#Equal variance of residuals
+
+lm.model |> 
+  augment() |> 
+  ggplot(aes(x =.fitted,
+             y = .resid))+
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", 
+             color = "red", lwd = 1.5)
+```
+
 ## 2.3 Model Fit
 
 ```{r}
-results |> 
+lm.model |> 
   glance() |> 
   kable() |> 
   kable_material()
 
-total.variance <- var(df.model$mean.sdi)
-fitted.variance <- var(fitted(results))
+total.variance <- var(df.clean.model$mean.sdi)
+fitted.variance <- var(fitted(lm.model))
 R2 <- fitted.variance/total.variance
 
 model.fit <- c(total.variance, fitted.variance, R2) |> 
