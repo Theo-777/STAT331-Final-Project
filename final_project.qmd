@@ -37,6 +37,9 @@ We came up with this hypothesis based on news articles we have seen throughout v
 library(tidyverse)
 library(knitr)
 library(kableExtra)
+library(gganimate) 
+library(broom) 
+library(scales) #for formatting p-values
 ```
 
 ## Data
@@ -97,7 +100,7 @@ str(df.clean)
 
 **Dataset Description:**
 
-Our dataset includes four columns (Country, Year, SDI and GDP) with 2,306 observations.  Each observation is identified by a country and year (e.g. Ethiopia, 2018). 
+Our dataset includes four columns (Country, Year, SDI and GDP) with 2,306 observations. Each observation is identified by a country and year (e.g. Ethiopia, 2018).
 
 ```{r}
 df.clean |> 
@@ -122,6 +125,10 @@ Also, data cleaning removing missing sdi or gdp data mainly affected small or po
 
 # 3. Modeling and Relationship Between Sustainability (SDI) and GDP per capita
 
+## 2.1 Data Visualization
+
+1.  The relationship between the two quantitative variables you are investigating
+
 ```{r}
 #preliminary scatterplot
 df.clean |> 
@@ -130,9 +137,69 @@ df.clean |>
   ggplot(aes(x = mean.gdp, y = mean.sdi))+
   geom_point()+
   geom_smooth(method = "lm")+
-  theme_classic() +
+  theme_minimal() +
   labs(x = "GDP per Capita (2017 dollars)", y = "", subtitle = "Sustainable Development Index (SDI)", title = "Relationship between GDP per capita and Sustainability (SDI) \n from 1990 to 2019")
   
+```
+
+2.  How this relationship (from #1) has changed over time using an animated plot.
+
+```{r}
+df.clean |> 
+  mutate(year = as.integer(year)) |> #prevents decimal places in subtitle
+  ggplot(aes(x = gdp, y = sdi))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  transition_time(year)+
+  ease_aes('linear')+
+  theme_minimal() +
+  labs(x = "GDP per Capita (2017 dollars)", 
+  y = "Sustainable Development Index (SDI)", 
+  subtitle = "Year: {frame_time}",
+  title = "Change Over time in the relationship between GDP per capita and sustainability (SDI) \n from 1990 to 2019")
+```
+
+## 2.2. Linear Regression
+
+```{r}
+df.model <- df.clean |> 
+  group_by(country) |> 
+  summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp))
+
+results <- lm(mean.sdi ~ mean.gdp, data = df.model)
+
+summary(results) |> 
+  tidy() |> 
+  mutate(p.value = pvalue(p.value)) |> #reformatting p-values (<0.001)
+  kable(digits = 5, 
+        col.names = c("Term", "Estimate", "Standard Error", "Statistic", "P-value"),
+  caption = "Linear regression model for the relationship between \n average sustainability (SDI) and average Gross Domestic Product (GDP) from 1990 to 2019") |>
+  kable_material()
+```
+
+Citation for formatting p-values using Scales package: <https://scales.r-lib.org/reference/label_pvalue.html>
+
+## 2.3 Model Fit
+
+```{r}
+results |> 
+  glance() |> 
+  kable() |> 
+  kable_material()
+
+total.variance <- var(df.model$mean.sdi)
+fitted.variance <- var(fitted(results))
+R2 <- fitted.variance/total.variance
+
+model.fit <- c(total.variance, fitted.variance, R2) |> 
+  as.data.frame() |> 
+  rename(value = "c(total.variance, fitted.variance, R2)") |> 
+  mutate(name = c("Total Variance", "Fitted Variance", "R2")) |> 
+  pivot_wider(names_from = name, 
+              values_from = value) |> 
+  kable(digits = 3, 
+        caption = "Model fit") |> 
+  kable_material()
 ```
 
 # 4. Cross-Validation
