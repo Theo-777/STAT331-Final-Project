@@ -135,7 +135,7 @@ df.clean |>
   group_by(country) |> 
   summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |>
   mutate(gdp_class = case_when(mean.gdp >= 20000 ~ "high_gdp",
-                        TRUE ~ "low_gdp")) |>
+                        TRUE ~ "low_gdp")|>
   ggplot(aes(x = log(mean.gdp), y = mean.sdi)) +
   geom_point() + facet_grid(~gdp_class) +
   geom_smooth(method = "lm") +
@@ -160,7 +160,13 @@ df.clean |>
 ```
 ```{r}
 #Residuals vs Fitted
-lm.fit <- lm(data = data_test, mean.sdi~mean.gdp)
+df.lm <- df.clean|>
+  group_by(country) |>
+  filter(mean(gdp) > 20000)|>
+  summarize (mean.sdi = mean(sdi), 
+             mean.gdp = mean(gdp))
+
+lm.fit <- lm(data = df.lm, mean.sdi ~ mean.gdp)
 
 lm.fit |> 
   augment() |> 
