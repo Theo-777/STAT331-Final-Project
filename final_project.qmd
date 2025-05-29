@@ -133,19 +133,49 @@ Also, data cleaning removing missing sdi or gdp data mainly affected small or po
 #preliminary scatterplot
 df.clean |> 
   group_by(country) |> 
-  summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |> 
-  ggplot(aes(x = mean.gdp, y = mean.sdi))+
-  geom_point()+
-  geom_smooth(method = "lm")+
+  summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |>
+  mutate(gdp_class = case_when(mean.gdp >= 20000 ~ "high_gdp",
+                        TRUE ~ "low_gdp")) |>
+  ggplot(aes(x = log(mean.gdp), y = mean.sdi)) +
+  geom_point() + facet_grid(~gdp_class) +
+  geom_smooth(method = "lm") +
   theme_minimal() +
   labs(x = "GDP per Capita (2017 dollars)", y = "", subtitle = "Sustainable Development Index (SDI)", title = "Relationship between GDP per capita and Sustainability (SDI) \n from 1990 to 2019")
   
 ```
+```{r}
+df.clean |> 
+  group_by(country) |> 
+  summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |>
+  filter(mean.gdp > 20000) |>
+  ggplot(aes(x = mean.gdp, y = mean.sdi)) +
+  geom_point()+
+  geom_smooth(method = "lm") +
+  theme_minimal() +
+  labs(x = "GDP per Capita (2017 dollars)", y = "", subtitle = "Sustainable Development Index (SDI) of High GDP Countries", title = "Relationship between GDP per capita and Sustainability (SDI) \n from 1990 to 2019")
+  
 
+
+
+```
+```{r}
+#Residuals vs Fitted
+lm.fit <- lm(data = data_test, mean.sdi~mean.gdp)
+
+lm.fit |> 
+  augment() |> 
+  ggplot(aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", 
+             color = "red", lwd = 1.5)
+```
 2.  How this relationship (from #1) has changed over time using an animated plot.
 
 ```{r}
 df.clean |> 
+  group_by(country) |>
+  filter(mean(gdp) > 20000) |>
+  ungroup() |>
   mutate(year = as.integer(year)) |> #prevents decimal places in subtitle
   ggplot(aes(x = gdp, y = sdi))+
   geom_point()+
@@ -165,7 +195,8 @@ df.clean |>
 ```{r}
 df.model <- df.clean |> 
   group_by(country) |> 
-  summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp))
+  summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |>
+  filter(mean.gdp > 20000)
 
 results <- lm(mean.sdi ~ mean.gdp, data = df.model)
 
