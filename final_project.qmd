@@ -186,7 +186,7 @@ df.clean.model <- df.clean |>
   summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |>
   filter(mean.gdp > 20000)
 
-lm.model <- lm(mean.sdi ~ mean.gdp, data = df.model)
+lm.model <- lm(mean.sdi ~ mean.gdp, data = df.clean.model)
 
 summary(lm.model) |> 
   tidy() |> 
