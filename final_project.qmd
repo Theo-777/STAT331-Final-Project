@@ -37,10 +37,9 @@ library(scales) #for formatting p-values
 
 ## Data
 
-We extracted two datasets from GapMinder on May 20, 2025. The first dataset is where the GDP per Capita was sourced from. The explanatory variable we were interested in is GDP per Capita (<http://gapm.io/dgdpcap_cppp>) from 1800-2022. For 1990-2022, the series aligns with the World Bank’s GDP per capita data (<https://data.worldbank.org/indicator/NY.GDP.PCAP.PP.KD>), published in April 2024. Prior to 1990, data is drawn from the 2023 version of the Maddison Project Database (<https://www.rug.nl/ggdc/historicaldevelopment/maddison/releases/maddison-project-database-2023>), which offers historical GDP estimates for 169 countries. In rare cases where neither source provided data (typically between 1950-2019) Gapminder uses the Penn World Table (PWT) version 10.01 (<https://www.rug.nl/ggdc/productivity/pwt/>), which covers 183 countries. When none of the above sources are available, Gapminder falls back on its own historical estimates, primarily from GDP Per capita v26 and earlier versions (<https://www.gapminder.org/documentation/documentation/gapdoc001_v9.pdf>). Additionally, Gapminder has produced new estimates for countries experiencing crises, including Afghanistan, Belarus, Cuba, North Korea, and others (these data points may be less accurate). The various sources were combined and cleaned for GapMinder. 
+We extracted two datasets from GapMinder on May 20, 2025. The first dataset is where the GDP per Capita was sourced from. The explanatory variable we were interested in is GDP per Capita (<http://gapm.io/dgdpcap_cppp>) from 1800-2022. For 1990-2022, the series aligns with the World Bank’s GDP per capita data (<https://data.worldbank.org/indicator/NY.GDP.PCAP.PP.KD>), published in April 2024. Prior to 1990, data is drawn from the 2023 version of the Maddison Project Database (<https://www.rug.nl/ggdc/historicaldevelopment/maddison/releases/maddison-project-database-2023>), which offers historical GDP estimates for 169 countries. In rare cases where neither source provided data (typically between 1950-2019) Gapminder uses the Penn World Table (PWT) version 10.01 (<https://www.rug.nl/ggdc/productivity/pwt/>), which covers 183 countries. When none of the above sources are available, Gapminder falls back on its own historical estimates, primarily from GDP Per capita v26 and earlier versions (<https://www.gapminder.org/documentation/documentation/gapdoc001_v9.pdf>). Additionally, Gapminder has produced new estimates for countries experiencing crises, including Afghanistan, Belarus, Cuba, North Korea, and others (these data points may be less accurate). The various sources were combined and cleaned for GapMinder.
 
 The second dataset is where the sustainable development index was sourced from. The response variable we were interested in is the Sustainable Development Index (<http://gapm.io/dsdi>) from 1990-2019. The Sustainable Development Index is a research project focused on the ecological efficiency of nations in delivering human development. The data was somewhat cleaned/split into different categories and then posted to GapMinder (https://www.sustainabledevelopmentindex.org/methods).
-
 
 ```{r}
 sustainability <- read_csv("sdi.csv")
@@ -82,7 +81,6 @@ df.clean <- sustainability.long |>
 str(df.clean)
 ```
 
-
 ```{r}
 df.clean |> 
   group_by(country) |> 
@@ -96,12 +94,11 @@ df.clean |>
   
 ```
 
-
 Our dataset includes four variables (Country, Year, SDI and GDP) with a total of 2,306 observations. Note that each observation is identified by a country and year (e.g. Ethiopia, 2018).
 
-We excluded observations missing SDI or GDP data, as these missing values occurred due to the datasets covering additional years not present in the other. For example, the SDI dataset covered only 1990–2019, whereas the GDP dataset spaned 1800–2100. Therefore, GDP values exist for years where SDI data does not, and vice versa. 
+We excluded observations missing SDI or GDP data, as these missing values occurred due to the datasets covering additional years not present in the other. For example, the SDI dataset covered only 1990–2019, whereas the GDP dataset spaned 1800–2100. Therefore, GDP values exist for years where SDI data does not, and vice versa.
 
-The GDP dataset included hypothetical data until the year 2100. We did not want to focus on hypothetical data for this report and we wanted to ensure consistency across datasets. Therefore, we did not include any years past 2019 and before 1990. When the GDP and SDI datasets were combined we constrained the data to match the years in the SDI dataset. 
+The GDP dataset included hypothetical data until the year 2100. We did not want to focus on hypothetical data for this report and we wanted to ensure consistency across datasets. Therefore, we did not include any years past 2019 and before 1990. When the GDP and SDI datasets were combined we constrained the data to match the years in the SDI dataset.
 
 When data cleaning, removing missing SDI or GDP data mainly affected small or politically unstable countries including: Angola, Antigua, Bhutan, Eritria, Lebanon, Nigeria, Serbia, Suriname, Turkmenistan, and Vanatu. Important to note, Belarus and North Korea were not included in the data at all.
 
@@ -117,7 +114,7 @@ df.clean |>
   group_by(country) |> 
   summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |>
   mutate(gdp_class = case_when(mean.gdp >= 20000 ~ "high_gdp",
-                        TRUE ~ "low_gdp")|>
+                        mean.gdp < 20000 ~ "low_gdp"))|>
   ggplot(aes(x = log(mean.gdp), y = mean.sdi)) +
   geom_point() + facet_grid(~gdp_class) +
   geom_smooth(method = "lm") +
@@ -125,6 +122,7 @@ df.clean |>
   labs(x = "GDP per Capita (2017 dollars)", y = "", subtitle = "Sustainable Development Index (SDI)", title = "Relationship between GDP per capita and Sustainability (SDI) \n from 1990 to 2019")
   
 ```
+
 ```{r}
 df.clean |> 
   group_by(country) |> 
@@ -140,6 +138,7 @@ df.clean |>
 
 
 ```
+
 ```{r}
 #Residuals vs Fitted
 df.lm <- df.clean|>
@@ -157,6 +156,7 @@ lm.fit |>
   geom_hline(yintercept = 0, linetype = "dashed", 
              color = "red", lwd = 1.5)
 ```
+
 2.  How this relationship (from #1) has changed over time using an animated plot.
 
 ```{r}
@@ -186,7 +186,7 @@ df.clean.model <- df.clean |>
   summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |>
   filter(mean.gdp > 20000)
 
-lm.model <- lm(mean.sdi ~ mean.gdp, data = df.model)
+lm.model <- lm(mean.sdi ~ mean.gdp, data = df.clean.model)
 
 summary(lm.model) |> 
   tidy() |> 
@@ -262,5 +262,3 @@ model.fit <- c(total.variance, fitted.variance, R2) |>
 ```
 
 # 6. Works Cited
-
-
