@@ -33,6 +33,7 @@ library(kableExtra)
 library(gganimate) 
 library(broom) 
 library(scales) #for formatting p-values
+library(broom)
 ```
 
 We extracted two datasets from GapMinder on May 20, 2025. The first dataset is where the GDP per Capita was sourced from. The explanatory variable we were interested in is GDP per Capita (<http://gapm.io/dgdpcap_cppp>) from 1800-2022. For 1990-2022, the series aligns with the World Bank’s GDP per capita data (<https://data.worldbank.org/indicator/NY.GDP.PCAP.PP.KD>), published in April 2024. Prior to 1990, data is drawn from the 2023 version of the Maddison Project Database (<https://www.rug.nl/ggdc/historicaldevelopment/maddison/releases/maddison-project-database-2023>), which offers historical GDP estimates for 169 countries. In rare cases where neither source provided data (typically between 1950-2019) Gapminder uses the Penn World Table (PWT) version 10.01 (<https://www.rug.nl/ggdc/productivity/pwt/>), which covers 183 countries. When none of the above sources are available, Gapminder falls back on its own historical estimates, primarily from GDP Per capita v26 and earlier versions (<https://www.gapminder.org/documentation/documentation/gapdoc001_v9.pdf>). Additionally, Gapminder has produced new estimates for countries experiencing crises, including Afghanistan, Belarus, Cuba, North Korea, and others (these data points may be less accurate). The various sources were combined and cleaned for GapMinder.
@@ -121,25 +122,27 @@ df.clean |>
   labs(x = "GDP per Capita (2017 dollars)", y = "", subtitle = "Sustainable Development Index (SDI)", title = "Relationship between GDP per capita and Sustainability (SDI) \n from 1990 to 2019")
 ```
 
-
 To enhance the readability of our previous plot we made some adjustments. The following plot demonstrates the relationship between the natural log of sustainability (in the form of the sustainability development index) and natural log of gross domestic product per capita for a country averaged over the years 1990 to 2019 with a graphical separation between GDP per capita for high (greater than or equal to 20000 dollars) and low (less than 20000 dollars) GDP per capita. The form of the relationship appears linear for the high and low GDP plots. The direction is negative for high GDP per capita and positive for low GDP per capita. The strength of both is moderately strong. Overall, there does not appear to be any unusual observations in either plots.
-
 
 ```{r}
 #preliminary scatterplot
 df.clean |> 
   group_by(country) |> 
   summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |>
-  mutate(gdp_class = case_when(mean.gdp >= 20000 ~ "high_gdp",
-                        mean.gdp < 20000 ~ "low_gdp"))|>
+  mutate(gdp_class = case_when(mean.gdp >= 20000 ~ "High GDP",
+                        mean.gdp < 20000 ~ "Low GDP"))|>
   ggplot(aes(x = log(mean.gdp), y = mean.sdi)) +
-  geom_point() + facet_grid(~gdp_class) +
+  geom_point() + 
+  facet_grid(~gdp_class) +
   geom_smooth(method = "lm") +
   theme_minimal() +
-  labs(x = "GDP per Capita (2017 dollars)", y = "", subtitle = "Sustainable Development Index (SDI)", title = "Relationship between GDP per capita and Sustainability (SDI) \n from 1990 to 2019")
+  labs(x = "GDP per Capita (2017 dollars)", 
+       y = "", 
+       subtitle = "Sustainable Development Index (SDI)", 
+       title = "Relationship between GDP per capita and Sustainability (SDI) 
+       \n from 1990 to 2019")
   
 ```
-
 
 Particularly interested in how richer countries are involved with sustainability efforts, we have decided to focus only on the subplot that demonstrates high GDP per capita countries. The following plot demonstrates the relationship between the natural log of sustainability (in the form of the sustainability development index) and natural log of gross domestic product per capita for a country averaged over the years 1990 to 2019 for high (greater than or equal to 20000 dollars) GDP per capita. The form of the relationship appears linear with the points following a straight line. The direction is negative with an increase in GDP per capita in 2017 dollars resulting in a decrease in sustainability development index (SDI). The strength is moderately strong with a slight amount of scatter around the line. Overall, there does not appear to be any unusual observations in either plots.
 
@@ -156,7 +159,6 @@ df.clean |>
 
 
 ```
-
 
 ```{r}
 #Residuals vs Fitted
@@ -176,9 +178,7 @@ lm.fit |>
              color = "red", lwd = 1.5)
 ```
 
-
 The following plot demonstrates the relationship between the natural log of sustainability (in the form of the sustainability development index) and natural log of gross domestic product per capita for high (greater than or equal to 20000 dollars) GDP per capita countries over the years 1990 to 2019. The form of the relationship appears linear with the points following a straight line. The direction is negative with an increase in GDP per capita in 2017 dollars resulting in a decrease in sustainability development index (SDI). The strength is moderately strong with a slight amount of scatter around the line. Overall, there does not appear to be any unusual observations in either plots. Over time, the sustainability index decreased and the GDP per Capita in 2017 dollars increased.
-
 
 ```{r}
 df.clean |> 
@@ -207,16 +207,15 @@ The statistical method that we selected was the simple linear regression. A simp
 
 The estimated regression model follows the following notation:
 
-$$\hat{y} = \beta_0 + \beta_1x + \epsilon$$ 
+$$\hat{y} = \beta_0 + \beta_1x + \epsilon$$
 
-$$\hat{y} = 73.18758 - 0.00067x_i$$
-where the $$\hat{y}$$ is the estimated sustainability development index and $$x_i$$ is the country's GDP per capita in 2017 dollars.
+$$\hat{y} = 73.18758 - 0.00067x_i$$ where the $$\hat{y}$$ is the estimated sustainability development index and $$x_i$$ is the country's GDP per capita in 2017 dollars.
 
 The linear regression model coefficients are as follows:
 
-The intercept of 73.18758 indicates when a country's GDP per capita is 0 dollars, the country's sustainability index in 73.18758.
+The intercept of 73.18758 indicates when a country's GDP per capita is 0 dollars, the country's sustainability index is 73.18758 units.
 
-The slope is -0.00067. We estimate that for every 10000 increase in a county's GDP per capita, their sustainability development index will decrease by 6.7.
+The slope is -0.00067. We estimate that for every 10000 increase in a county's GDP per capita, their sustainability development index will decrease by 6.7 units.
 
 ```{r}
 df.clean.model <- df.clean |> 
@@ -237,53 +236,49 @@ summary(lm.model) |>
 
 Citation for formatting p-values using Scales package: <https://scales.r-lib.org/reference/label_pvalue.html>
 
-### Diagnostics
+### Assumptions
 
-```{r}
-#linear relationship
+1.  **Linear Relationship** - when the data is subsetted to only include high (greater than or equal to 20000 dollars) GDP per capita, the relationship is linear.
 
-#Independent observations
-#yes
+2.  **Independent Observations** - the observations (identified by each country and year) are reasonably independent.
 
-#Nortmally distributed residuals
-ggplot(data = lm.model,
-       aes(x = .resid))+
-  geom_histogram(aes(y = after_stat(density)))+
-  geom_density(color = "dodgerblue", 
-               lwd = 1.5)+
-  xlab("Residuals")
+3.  **Normally Distributed Residuals** - the residuals (difference between the predicted and observed data) are roughly normally distributed (bell-shaped curve).
 
-#Equal variance of residuals
+    ```{r}
+    ggplot(data = lm.model,
+           aes(x = .resid))+
+      geom_histogram(aes(y = after_stat(density)))+
+      geom_density(color = "dodgerblue", 
+                   lwd = 1.5)+
+      xlab("Residuals")
+    ```
 
-lm.model |> 
-  augment() |> 
-  ggplot(aes(x =.fitted,
-             y = .resid))+
-  geom_point() +
-  geom_hline(yintercept = 0, linetype = "dashed", 
-             color = "red", lwd = 1.5)
-```
+4.  **Equal Variance of Residuals** - the residuals are roughly spaced out evenly with respected to the fitted values (values along the line).
+
+    ```{r}
+    lm.model |> 
+      augment() |> 
+      ggplot(aes(x =.fitted,
+                 y = .resid))+
+      geom_point() +
+      geom_hline(yintercept = 0, linetype = "dashed", 
+                 color = "red", lwd = 1.5)
+    ```
 
 ## 2.3 Model Fit
 
+The linear regression model explains about 39% (98.56726) of the total variance (251.129) in sustainability (SDI). This R-squared value is generally considered to be relatively low, indicating that the quality of the model is less than ideal. Additionally, the standard deviation of the residuals (sigma) is 12.5, indicating that there is a fair amount of variability in the residuals.
+
 ```{r}
 lm.model |> 
-  glance() |> 
-  kable() |> 
-  kable_material()
-
-total.variance <- var(df.clean.model$mean.sdi)
-fitted.variance <- var(fitted(lm.model))
-R2 <- fitted.variance/total.variance
-
-model.fit <- c(total.variance, fitted.variance, R2) |> 
-  as.data.frame() |> 
-  rename(value = "c(total.variance, fitted.variance, R2)") |> 
-  mutate(name = c("Total Variance", "Fitted Variance", "R2")) |> 
-  pivot_wider(names_from = name, 
-              values_from = value) |> 
+  augment() |> 
+  summarize( fitted.variance = var(.fitted),
+             total.variance = var(mean.sdi), 
+         R2 = fitted.variance/total.variance, 
+         sigma = mean(.sigma)) |> 
   kable(digits = 3, 
-        caption = "Model fit") |> 
+        caption = "Linear regression model for the inear relationship between sustainability (SDI) and GDP per capita", 
+        col.names = c("Fitted Variance", "Total Variance", "R-Squared", "Sigma")) |> 
   kable_material()
 ```
 
