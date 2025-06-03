@@ -263,19 +263,123 @@ lm.model |>
   kable_material()
 ```
 
-# 4. Cross-Validation
+# 3. Cross-Validation
+
+Example Function
 
 ```{r}
 
+# 5-fold CV as a for-loop
+# only for educational purposes!
+
+# k = 10
+k <- 10
+
+# create a vector to store results
+cv_r2 <- rep(NA, k)
+
+# for each fold 1-k...
+for(x in 1:k){
+  
+  # separate fold (test) data
+  fold_dat <- penguins |> 
+    filter(fold == x)
+  
+  # and training data
+  train_dat <- penguins |> 
+    filter(fold != x)
+  
+  # fit model with training data
+  it_lm <- lm(bill_length_mm ~ bill_depth_mm, 
+               data = train_dat)
+  
+  # generate predictions for the held-out fold data
+  fold_preds <- predict(it_lm, newdata = fold_dat)
+
+  # calculate R2 for the held-out fold data and save it
+  cv_r2[x] <- var(fold_preds)/var(fold_dat$bill_length_mm)
+  
+}
 ```
 
-# 5. Conclusion
+## 3.1 Implement k-fold cross validation
 
 ```{r}
+df.clean.cv <- df.clean |> 
+  group_by(country) |> 
+  summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |>
+  filter(mean.gdp > 20000) |>
+  mutate(fold = sample(rep_len(1:4, length.out = 46),
+                       size = 46)) 
+
+#creating function
+cross.validation <- function(df, k){
+  
+  # separate fold (test) data
+  fold_dat <- df |> 
+    filter(fold == k)
+  
+  # and training data
+  train_dat <- df |> 
+    filter(fold != k)
+  
+  # fit model with training data
+  it_lm <- lm(mean.sdi ~ mean.gdp, 
+               data = train_dat)
+  
+  # generate predictions for the held-out fold data
+  fold_preds <- predict(it_lm, newdata = fold_dat)
+
+  # calculate R2 for the held-out fold data and save it
+  r2 <- var(fold_preds)/var(fold_dat$mean.sdi)
+  
+  #return r2
+  return(r2)
+  
+}
+
+#map
+kfoldcv <- map_dbl(.x = 1:4, 
+               .f = ~cross.validation(df.clean.cv, k = .x)) 
+
+
+#average the R2 values
+mean.r2 <- mean(kfoldcv)
 
 ```
 
-# 6. Works Cited
+## 3.2 Plot the Results
+
+```{r}
+kfoldcv |> 
+  as.data.frame() |> 
+  rename(R2 = kfoldcv) |> 
+  mutate(k = 1:4, .before = R2) |> 
+  ggplot(aes(x = k,
+             y = R2)) + 
+  geom_point()+
+  geom_hline(yintercept = mean.r2, 
+             color = "red", 
+             linetype = "dashed") +
+  geom_text(aes(0, mean.r2, 
+                label = "Mean R2 = 0.431", 
+                vjust = -1, hjust = -0.05),
+            color = "red") +
+  theme_classic()+
+  labs(x = "K Folds", 
+       y = "",
+       subtitle = "R-Squared",
+       title = "K-fold Cross-Validation")
+  
+```
+
+# 4. Conclusion
+
+R2 From Linear Regression = 0.392
+
+R2 from K-fold Cross-Validation = 0.431
+
+# 5. Works Cited
 
 FocusEconomics. “GDP per Capita (USD) Archives.” *FocusEconomics*, 28 May 2025, www.focus- economics.com/economic-indicator/gdp-per-capita/.
 
@@ -285,7 +389,7 @@ Gahrib, Sarah. “Rich Countries Have a ‘responsibility’ to Fund Climate Eff
 
 “GDP per Capita, PPP (Constant 2021 International \$).” *World Bank Open Data*, data.worldbank.org/indicator/NY.GDP.PCAP.PP.KD. Accessed 30 May 2025.
 
-“Label P-Values (e.g. &lt;0.001, 0.25, p &gt;= 0.99) - Label_pvalue.” *- Label_pvalue • Scales*, scales.r-lib.org/reference/label_pvalue.html. Accessed 30 May 2025.
+“Label P-Values (e.g. \<0.001, 0.25, p \>= 0.99) - Label_pvalue.” *- Label_pvalue • Scales*, scales.r-lib.org/reference/label_pvalue.html. Accessed 30 May 2025.
 
 Lindgren, Mattias. "Doumentation for GDP per Capita by Purchasing Power Parities." *Gapminder,* https://www.gapminder.org/documentation/documentation/gapdoc001_v9.pdf*.* Accessed 30 May 2025.
 
