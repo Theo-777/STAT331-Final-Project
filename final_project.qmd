@@ -361,13 +361,9 @@ high_gdp_model <- lm(mean.sdi ~ mean.gdp, data = high_gdp_data)
 
 # Get R² from the original linear regression model
 original_r2 <- summary(high_gdp_model)$r.squared
-
-# Compare results
-cat("R2 From Linear Regression =", round(original_r2, 3), "\n")
-cat("R2 from K-fold Cross-Validation =", round(mean.r2, 3), "\n")
 ```
 
-Our analysis examined the relationship between GDP per capita and sustainability (SDI) among wealthy nations using linear regression modeling. The linear regression revealed a statistically significant negative relationship, with the model explaining `r round(original_r2, 3)*100` % of the variance in sustainability scores. Specifically, for every \$10,000 increase in GDP per capita, sustainability scores decrease by approximately 6.7 units among high GDP countries.
+Our analysis examined the relationship between GDP per capita and sustainability (SDI) among wealthy nations using linear regression modeling. The linear regression revealed a statistically significant negative relationship, with the model explaining `r round(original_r2, 2)*100` % of the variance in sustainability scores. Specifically, for every \$10,000 increase in GDP per capita, sustainability scores decrease by approximately 6.7 units among high GDP countries.
 
 The cross-validation analysis provided additional insights into model performance and reliability. While the average cross-validation R² of `r round(mean.r2, 3)` suggests reasonable predictive power, the high variability across folds raises concerns about the model's reliability and generalizability. The inconsistent performance suggests that factors beyond GDP per capita may play varying roles in different subsets of wealthy countries, or that the linear relationship assumption may not hold equally well across all high GDP nations.
 
