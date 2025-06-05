@@ -188,7 +188,7 @@ The statistical method that we selected was the simple linear regression because
 
 The estimated regression model follows the following notation:
 
-$$\hat{y} = \beta_0 + \beta_1x + \epsilon$$
+$$\hat{y} = \hat\beta_0 + \hat\beta_1x + \epsilon$$
 
 $$\hat{y} = 73.18758 - 0.00067x_i$$ where the $$\hat{y}$$ is the estimated sustainability development index and $$x_i$$ is the country's GDP per capita in 2017 dollars.
 
