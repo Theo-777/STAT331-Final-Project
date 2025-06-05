@@ -38,7 +38,7 @@ library(broom)
 
 We extracted two datasets from GapMinder on May 20, 2025. The first dataset is where the GDP per capita was sourced from. The explanatory variable we were interested in is GDP per capita (GDP Per Capita, GapMinder) from 1800-2022. For 1990-2022, the series aligns with the World Bank’s GDP per capita data (GDP Per Capita, WorldBank), published in April 2024. Prior to 1990, data is drawn from the 2023 version of the Maddison Project Database (Madison Project Database, 2024), which offers historical GDP per capita estimates for 169 countries. In rare cases where neither source provided data (typically between 1950-2019) Gapminder uses the Penn World Table (PWT) version 10.01 (PWT, 2024), which covers 183 countries. When none of the above sources are available, Gapminder falls back on its own historical estimates, primarily from GDP per capita v26 and earlier versions (Lindgen, 2011). Additionally, Gapminder has produced new estimates for countries experiencing crises, including Afghanistan, Belarus, Cuba, North Korea, and others (these data points may be less accurate). The various sources were combined and cleaned for GapMinder.
 
-The second dataset is where the sustainable development index was sourced from. The response variable we were interested in is the Sustainable Development Index (U. Jean, 2021) from 1990-2019. The Sustainable Development Index is a research project focused on the ecological efficiency of nations in delivering human development. The data was somewhat cleaned/split into different categories and then posted to GapMinder.
+The second dataset is where the SDI was sourced from. The response variable we were interested in is the SDI (U. Jean, 2021) from 1990-2019. The SDI is a research project focused on the ecological efficiency of nations in delivering human development. The data was somewhat cleaned/split into different categories and then posted to GapMinder.
 
 ```{r}
 sustainability <- read_csv("sdi.csv")
@@ -106,7 +106,7 @@ When data cleaning, removing missing SDI or GDP per capita data mainly affected 
 
 In the following plots, we have decided to take the mean GDP per capita across the years 1990 to 2019 so that each point on the following plots represent one country. We decided to present the data in this way for clarity.
 
-The following plot demonstrates the relationship between the sustainability (in the form of the sustainability development index) and GDP per capita for a country averaged over the years 1990 to 2019. The form of the relationship appears quadratic due to the predominate curve at 10,000 dollars for GDP per capita. The direction is positive before 10,000 dollars for GDP per capita and negative after 10,000 dollars for GDP per capita. The strength is strong before 10,000 dollars for GDP per capita with increasing scatter after 10,000 dollars for GDP per capita making it relatively weak. Overall, there does not appear to be any unusual observations.
+The following plot demonstrates the relationship between the sustainability (in the form of the SDI) and GDP per capita for a country averaged over the years 1990 to 2019. The form of the relationship appears quadratic due to the predominate curve at 10,000 dollars for GDP per capita. The direction is positive before 10,000 dollars for GDP per capita and negative after 10,000 dollars for GDP per capita. The strength is strong before 10,000 dollars for GDP per capita with increasing scatter after 10,000 dollars for GDP per capita making it relatively weak. Overall, there does not appear to be any unusual observations.
 
 ```{r}
 df.clean |> 
@@ -121,7 +121,7 @@ df.clean |>
   labs(x = "GDP per Capita (2017 dollars)", y = "", subtitle = "Sustainable Development Index (SDI)", title = "Relationship between GDP per capita and Sustainability (SDI) \n from 1990 to 2019")
 ```
 
-To enhance the readability of our previous plot we made some adjustments. The following plot demonstrates the relationship between the sustainability (in the form of the sustainability development index) and natural log of GDP per capita for a country averaged over the years 1990 to 2019 with a graphical separation between GDP per capita for high (greater than or equal to 20000 dollars) and low (less than 20000 dollars) GDP per capita. The form of the relationship appears linear for the high and low GDP plots. The direction is negative for high GDP per capita and positive for low GDP per capita. The strength of both is moderately strong. Overall, there does not appear to be any unusual observations in either plots.
+To enhance the readability of our previous plot we made some adjustments. The following plot demonstrates the relationship between the sustainability (in the form of the SDI) and natural log of GDP per capita for a country averaged over the years 1990 to 2019 with a graphical separation between GDP per capita for high (greater than or equal to 20000 dollars) and low (less than 20000 dollars) GDP per capita. The form of the relationship appears linear for the high and low GDP plots. The direction is negative for high GDP per capita and positive for low GDP per capita. The strength of both is moderately strong. Overall, there does not appear to be any unusual observations in either plots.
 
 ```{r}
 #preliminary scatterplot
@@ -143,7 +143,7 @@ df.clean |>
   
 ```
 
-Particularly interested in how richer countries are involved with sustainability efforts, we have decided to focus only on the subplot that demonstrates high GDP per capita countries. The following plot demonstrates the relationship between the sustainability (in the form of the sustainability development index) and natural log of GDP per capita for a country averaged over the years 1990 to 2019 for high (greater than or equal to 20000 dollars) GDP per capita. The form of the relationship appears linear with the points following a straight line. The direction is negative with an increase in GDP per capita in 2017 dollars resulting in a decrease in sustainability development index (SDI). The strength is moderately strong with a slight amount of scatter around the line. Overall, there does not appear to be any unusual observations in either plots.
+Particularly interested in how richer countries are involved with sustainability efforts, we have decided to focus only on the subplot that demonstrates high GDP per capita countries. The following plot demonstrates the relationship between the sustainability (in the form of the SDI) and GDP per capita for a country averaged over the years 1990 to 2019 for high (greater than or equal to 20000 dollars) GDP per capita. After truncating the data, our line assumptions were met indicating that a natural logarithm transformation of GDP per capita was no longer needed. The form of the relationship appears linear with the points following a straight line. The direction is negative with an increase in GDP per capita in 2017 dollars resulting in a decrease in SDI. The strength is moderately strong with a slight amount of scatter around the line. Overall, there does not appear to be any unusual observations in either plots.
 
 ```{r}
 df.clean |> 
@@ -159,7 +159,7 @@ df.clean |>
 
 ```
 
-The following plot demonstrates the relationship between the sustainability (in the form of the sustainability development index) and natural log of GDP per capita for high (greater than or equal to 20000 dollars) GDP per capita countries over the years 1990 to 2019. The form of the relationship appears linear with the points following a straight line. The direction is negative with an increase in the natural log of GDP per capita in 2017 dollars resulting in a decrease in sustainability development index (SDI). The strength is moderately strong with a slight amount of scatter around the line. Overall, there does not appear to be any unusual observations in the plot. Over time, the frames representing each year shift down and to the right meaning that the sustainability index decreased and the natural log of GDP per capita in 2017 dollars increased.
+The following plot demonstrates the relationship between the sustainability (in the form of the SDI) and GDP per capita for high (greater than or equal to 20000 dollars) GDP per capita countries over the years 1990 to 2019. The form of the relationship appears linear with the points following a straight line. The direction is negative with an increase in the GDP per capita in 2017 dollars resulting in a decrease in SDI. The strength is moderately strong with a slight amount of scatter around the line. Overall, there does not appear to be any unusual observations in the plot. Over time, the frames representing each year shift down and to the right meaning that the sustainability index decreased and the GDP per capita in 2017 dollars increased.
 
 ```{r}
 df.clean |> 
@@ -182,15 +182,15 @@ df.clean |>
 
 ## 2.2. Linear Regression
 
-As mentioned previously, we have decided to take the mean natural log GDP per capita accross the years 1990 to 2019 so that each point on the following plots represent one country. We decided to present the data in this way for clarity.
+As mentioned previously, we have decided to take the mean GDP per capita across the years 1990 to 2019 so that each point on the following plots represent one country. We decided to present the data in this way for clarity.
 
-The statistical method that we selected was the simple linear regression because our data generally has a simple linear form. A simple linear regression assumes that the relationship between the GDP per capita and the sustainability development index has a linear function.
+The statistical method that we selected was the simple linear regression because our data generally has a simple linear form. A simple linear regression assumes that the relationship between the GDP per capita and the SDI has a linear function.
 
 The estimated regression model follows the following notation:
 
 $$\hat{y} = \hat\beta_0 + \hat\beta_1x $$
 
-$$\hat{y} = 73.18758 - 0.00067x_i$$The $\hat{y}$ is the estimated sustainability development index and $x_i$ is the country's GDP per capita in 2017 dollars. The intercept indicates that a country with GDP per capita of 0 dollars has a predicted sustainability index of 73.18758 units. For every 10,000 2017 dollar increase in a country's GDP per capita, the predicted sustainability index score decreases by 6.7 units.
+$$\hat{y} = 73.18758 - 0.00067x_i$$The $\hat{y}$ is the estimated SDI and $x_i$ is the country's GDP per capita in 2017 dollars. The intercept indicates that a country with GDP per capita of 0 dollars has a predicted sustainability index of 73.18758 units. For every 10,000 2017 dollar increase in a country's GDP per capita, the predicted sustainability index score decreases by 6.7 units.
 
 ```{r}
 df.clean.model <- df.clean |> 
