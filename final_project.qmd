@@ -265,46 +265,17 @@ lm.model |>
 
 # 3. Cross-Validation
 
-Example Function
+Cross-validation is a statistical technique used to assess how well a model will generalize to new, unseen data. The process involves partitioning the original dataset into multiple subsets (folds), training the model on most of these subsets, and then testing the model's performance on the remaining subset. This process is repeated multiple times, with each fold serving as the validation set exactly once. Cross-validation helps us understand the stability and reliability of our model's performance and can reveal issues such as overfitting, where a model performs well on training data but poorly on new data.
 
-```{r}
-
-# 5-fold CV as a for-loop
-# only for educational purposes!
-
-# k = 10
-k <- 10
-
-# create a vector to store results
-cv_r2 <- rep(NA, k)
-
-# for each fold 1-k...
-for(x in 1:k){
-  
-  # separate fold (test) data
-  fold_dat <- penguins |> 
-    filter(fold == x)
-  
-  # and training data
-  train_dat <- penguins |> 
-    filter(fold != x)
-  
-  # fit model with training data
-  it_lm <- lm(bill_length_mm ~ bill_depth_mm, 
-               data = train_dat)
-  
-  # generate predictions for the held-out fold data
-  fold_preds <- predict(it_lm, newdata = fold_dat)
-
-  # calculate R2 for the held-out fold data and save it
-  cv_r2[x] <- var(fold_preds)/var(fold_dat$bill_length_mm)
-  
-}
-```
+In k-fold cross-validation, the dataset is randomly divided into k equal-sized folds. For each iteration, k-1 folds are used for training the model, while the remaining fold is used for validation. The performance metric (in our case, R²) is calculated for each fold, providing k different estimates of model performance. The average of these estimates gives us a more robust assessment of how our model is likely to perform on new data.
 
 ## 3.1 Implement k-fold cross validation
 
 ```{r}
+#set seed to get the same results each time so that we can talk about results
+#did test this without set seed many times
+set.seed(123)
+
 df.clean.cv <- df.clean |> 
   group_by(country) |> 
   summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |>
@@ -333,7 +304,7 @@ cross.validation <- function(df, k){
   # calculate R2 for the held-out fold data and save it
   r2 <- var(fold_preds)/var(fold_dat$mean.sdi)
   
-  #return r2
+  # return r2
   return(r2)
   
 }
@@ -347,6 +318,7 @@ kfoldcv <- map_dbl(.x = 1:4,
 mean.r2 <- mean(kfoldcv)
 
 ```
+Our implementation used 4-fold cross-validation with all of the high GDP countries (GDP > $20,000). We chose 4 folds to ensure each fold contained approximately 11-12 countries, meeting the minimum requirement of at least 10 observations per fold for reliable statistical inference. The map_dbl() function applied our cross-validation function to each fold, training the linear regression model on 75% of the data and testing on the remaining 25% for each iteration.
 
 ## 3.2 Plot the Results
 
@@ -362,7 +334,7 @@ kfoldcv |>
              color = "red", 
              linetype = "dashed") +
   geom_text(aes(0, mean.r2, 
-                label = "Mean R2 = 0.431", 
+                label = "Mean R2 = 0.488", 
                 vjust = -1, hjust = -0.05),
             color = "red") +
   theme_classic()+
@@ -372,12 +344,42 @@ kfoldcv |>
        title = "K-fold Cross-Validation")
   
 ```
+```{r}
+
+high_gdp_data <- df.clean |>
+  group_by(country) |>
+  summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |>
+  filter(mean.gdp > 20000)
+
+high_gdp_model <- lm(mean.sdi ~ mean.gdp, data = high_gdp_data)
+
+# Get R² from the original linear regression model
+original_r2 <- summary(high_gdp_model)$r.squared
+
+# Compare results
+cat("R2 From Linear Regression =", round(original_r2, 3), "\n")
+cat("R2 from K-fold Cross-Validation =", round(mean.r2, 3), "\n")
+```
+
+The average cross-validation R² of 0.488 indicates that our linear regression model explains approximately 49% of the variance in sustainability scores among high GDP countries on average across validation folds. This represents moderate to good predictive power, suggesting the model captures a substantial portion of the relationship between GDP per capita and sustainability performance.
+
+The plot reveals considerable variation in model performance across the four folds, with R² values ranging from approximately 0.20 to 1.18. This substantial variability (nearly a 6-fold difference between the lowest and highest performing folds) indicates that with only approximately 11-12 countries per fold, individual countries with extreme values can dramatically influence model performance within each fold. The large variation indicates that our model's predictive ability is not consistent across different subsets of high GDP countries, suggesting the relationship between GDP and sustainability may not be uniform across all wealthy nations. Some folds may contain countries that are particularly well-predicted by the GDP-sustainability relationship, while others may contain countries that deviate significantly from this pattern.
+
+The cross-validation R² (0.488) is higher than the original linear regression R² (0.392), and one fold achieves an R² above 1.0. While this might initially suggest overfitting, it's more likely due to the small sample sizes in each fold and the specific R² calculation method used (variance of predictions divided by variance of outcomes).
+
+The cross-validation results reveal important limitations for practical application of our model. The wide performance variation (R² ranging from ~0.20 to 1.18 across folds) suggests our model may not be reliable for predicting sustainability outcomes for individual wealthy countries. This inconsistency indicates that country-specific factors beyond GDP per capita play crucial roles in determining sustainability performance among high-income nations. While the model captures the general inverse relationship on average, practitioners should exercise caution when using it for policy predictions or country-specific assessments, as the model's effectiveness appears highly dependent on which subset of wealthy countries is being analyzed.
 
 # 4. Conclusion
 
 R2 From Linear Regression = 0.392
 
-R2 from K-fold Cross-Validation = 0.431
+R2 from K-fold Cross-Validation = 0.488
+
+Our analysis examined the relationship between GDP per capita and sustainability (SDI) among wealthy nations using linear regression modeling. The linear regression revealed a statistically significant negative relationship, with the model explaining 39% of the variance in sustainability scores. Specifically, for every $10,000 increase in GDP per capita, sustainability scores decrease by approximately 6.7 units among high GDP countries.
+
+The cross-validation analysis provided additional insights into model performance and reliability. While the average cross-validation R² of 0.488 suggests reasonable predictive power, the high variability across folds raises concerns about the model's reliability and generalizability. The inconsistent performance suggests that factors beyond GDP per capita may play varying roles in different subsets of wealthy countries, or that the linear relationship assumption may not hold equally well across all high GDP nations.
+
+The cross-validation results indicate that while our linear regression model captures meaningful patterns in the data on average, its performance is highly dependent on the specific countries being analyzed. This suggests that the relationship between GDP and sustainability among wealthy nations is more complex and variable than a simple linear model can fully capture. The negative relationship we identified appears genuine but may not be uniformly applicable across all wealthy countries.
 
 # 5. Works Cited
 
