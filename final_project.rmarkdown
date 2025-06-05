@@ -1,0 +1,459 @@
+---
+title: "Relationship Between Sustainability (SDI) and GDP per Capita"
+author: "Karisa Kopecek, Theo Sprouse, Treasure Joyce & Brooke Wallasch"
+format: 
+  html:
+    embed-resources: true
+    code-tools: true
+    toc: true
+    html-table-processing: none
+    code-fold: true
+editor: source
+execute: 
+  error: true
+  echo: true
+  message: false
+  warning: false
+---
+
+
+
+# Introduction
+
+We were interested in investigating the relationship between gross domestic product (GDP) per capita and the sustainable development index (SDI). GDP per capita is a metric that provides a monetary sum of the services and goods outputted from a country per person (FocusEconomics, 2025). SDI measures how efficient a countries developments are (Sustanable Development Index, 2025). Before forming a hypothesis about the relationship between these two variables, we investigated development in different countries. We found that some of the leading countries in sustainability efforts across governance, environmental and social companies include Denmark, Finland, Sweden and Norway which are all countries that are developed countries versus some of the lowest being Burkina Faso, Guinea, and Ethiopia which are developing nations (Robeco.com, 2024). We found a sector of research investigating the relationship between the rich and climate change and how they are leading to rapid climate change (Paddison, 2021). Additionally, this stemmed into articles discussing whether the rich have a responsibility to pay for their impact on climate change (Gharib, 2021). Additionally, there is a larger gap in sustainability efforts of richer countries compared to poorer countries (Sexton, 2023). Overall, we were motivated to see whether richer countries do actually receive higher sustainability scores.
+
+**For these reasons and due to our preliminary research that we conducted we hypothesized that countries with higher gross domestic product (GDP) per capita** **will have higher sustainability scores. Additionally, we hypothesized that there is a positive correlation between country wealth and sustainability score of countries.**
+
+After completing this report we hope to provide an analysis of the relationship between GDP per capita and sustainability scores across different countries , evaluate outliers in the data, an ultimately asses whether sustainability outcomes are better or worse depending on a country's GDP per capita.
+
+# Data Description
+
+
+
+```{r}
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(gganimate) 
+library(broom) 
+library(scales) #for formatting p-values
+library(broom)
+```
+
+
+
+We extracted two datasets from GapMinder on May 20, 2025. The first dataset is where the GDP per capita was sourced from. The explanatory variable we were interested in is GDP per capita (GDP Per Capita, GapMinder) from 1800-2022. For 1990-2022, the series aligns with the World Bank’s GDP per capita data (GDP Per Capita, WorldBank), published in April 2024. Prior to 1990, data is drawn from the 2023 version of the Maddison Project Database (Madison Project Database, 2024), which offers historical GDP per capita estimates for 169 countries. In rare cases where neither source provided data (typically between 1950-2019) Gapminder uses the Penn World Table (PWT) version 10.01 (PWT, 2024), which covers 183 countries. When none of the above sources are available, Gapminder falls back on its own historical estimates, primarily from GDP per capita v26 and earlier versions (Lindgen, 2011). Additionally, Gapminder has produced new estimates for countries experiencing crises, including Afghanistan, Belarus, Cuba, North Korea, and others (these data points may be less accurate). The various sources were combined and cleaned for GapMinder.
+
+The second dataset is where the SDI was sourced from. The response variable we were interested in is the SDI (U. Jean, 2021) from 1990-2019. The SDI is a research project focused on the ecological efficiency of nations in delivering human development. The data was somewhat cleaned/split into different categories and then posted to GapMinder.
+
+
+
+```{r}
+sustainability <- read_csv("sdi.csv")
+#164 countries, 1990 - 2019
+
+gdp <- read_csv("gdp_pcap.csv")
+#195 countries, 1800 - 2100
+```
+
+
+
+# 2. Data Cleaning
+
+
+
+```{r}
+#helper function for values formatted as ex: "1.1k"
+convert_k_to_numeric <- function(x) {
+  x <- gsub("k", "e3", x)
+  as.numeric(x)
+}
+
+
+#pivot longer (each row identified by a country and a year)
+sustainability.long <- sustainability |> 
+  mutate(across(.cols = '1990':'2019', .fns = ~as.numeric(.x, na.rm = TRUE))) |> 
+  pivot_longer(cols = '1990':'2019', 
+               names_to = "year", 
+               values_to = "sdi")
+
+gdp_long <- gdp |> 
+  mutate(across(.cols = '1800':'2100', .fns = ~convert_k_to_numeric(.x))) |> 
+  pivot_longer(cols = '1800':'2100', 
+               names_to = "year", 
+               values_to = "gdp")
+
+#left_join and removing rows missing sdi or gdp
+df.clean <- sustainability.long |> 
+  left_join(gdp_long, join_by(country, year)) |> 
+  filter(!if_any(.cols = sdi:gdp, .fns = ~is.na(.x))) |> 
+  mutate(year = as.numeric(year))
+```
+
+```{r, eval=FALSE}
+#we used this to find which countries had data, countries missing data are listed in the following paragraph
+df.clean |> 
+  group_by(country) |> 
+  summarize(across(.cols = year:gdp, 
+                   .fns = ~range(.x)), 
+           across(.cols = year:gdp, 
+                   .fns = ~paste(.x, collapse = "-"))) |> 
+  unique() |> 
+  kable(col.names = c("Country", "Year Range", "SDI Range", "GDP Range")) |> 
+  kable_styling(bootstrap_options = "striped")
+  
+```
+
+
+
+Our dataset includes four variables (Country, Year, SDI and GDP per capita) with a total of 2,306 observations. Note that each observation is identified by a country and year (e.g. Ethiopia, 2018).
+
+We excluded observations missing SDI or GDP per capita data, as these missing values occurred due to the datasets covering additional years not present in the other. For example, the SDI dataset covered only 1990–2019, whereas the GDP per capita dataset spanned 1800–2100. Therefore, GDP per capita values exist for years where SDI data does not, and vice versa.
+
+The GDP per capita dataset included hypothetical data until the year 2100. We did not want to focus on hypothetical data for this report and we wanted to ensure consistency across datasets. Therefore, we did not include any years past 2019 and before 1990. When the GDP per capita and SDI datasets were combined we constrained the data to match the years in the SDI dataset.
+
+When data cleaning, removing missing SDI or GDP per capita data mainly affected small or politically unstable countries including: Angola, Antigua, Bhutan, Eritria, Lebanon, Nigeria, Serbia, Suriname, Turkmenistan, and Vanatu. Important to note, Belarus and North Korea were not included in the data at all.
+
+# Modeling and Relationship Between Sustainability (SDI) and GDP per capita
+
+## 2.1 Data Visualization
+
+In the following plots, we have decided to take the mean GDP per capita across the years 1990 to 2019 so that each point on the following plots represent one country. We decided to present the data in this way for clarity.
+
+The following plot demonstrates the relationship between the sustainability (in the form of the SDI) and GDP per capita for a country averaged over the years 1990 to 2019. The form of the relationship appears quadratic due to the predominate curve at 10,000 dollars for GDP per capita. The direction is positive before 10,000 dollars for GDP per capita and negative after 10,000 dollars for GDP per capita. The strength is strong before 10,000 dollars for GDP per capita with increasing scatter after 10,000 dollars for GDP per capita making it relatively weak. Overall, there does not appear to be any unusual observations.
+
+
+
+```{r}
+df.clean |> 
+  group_by(country) |> 
+  summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |>
+  mutate(gdp_class = case_when(mean.gdp >= 20000 ~ "high_gdp",
+                        mean.gdp < 20000 ~ "low_gdp"))|>
+  ggplot(aes(x = mean.gdp, y = mean.sdi)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_minimal() +
+  labs(x = "GDP per Capita (2017 dollars)", y = "", subtitle = "Sustainable Development Index (SDI)", title = "Relationship between GDP per capita and Sustainability (SDI) \n from 1990 to 2019")
+```
+
+
+
+To enhance the readability of our previous plot we made some adjustments. The following plot demonstrates the relationship between the sustainability (in the form of the SDI) and natural log of GDP per capita for a country averaged over the years 1990 to 2019 with a graphical separation between GDP per capita for high (greater than or equal to 20000 dollars) and low (less than 20000 dollars) GDP per capita. The form of the relationship appears linear for the high and low GDP plots. The direction is negative for high GDP per capita and positive for low GDP per capita. The strength of both is moderately strong. Overall, there does not appear to be any unusual observations in either plots.
+
+
+
+```{r}
+#preliminary scatterplot
+df.clean |> 
+  group_by(country) |> 
+  summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |>
+  mutate(gdp_class = case_when(mean.gdp >= 20000 ~ "High GDP",
+                        mean.gdp < 20000 ~ "Low GDP"))|>
+  ggplot(aes(x = log(mean.gdp), y = mean.sdi)) +
+  geom_point() + 
+  facet_grid(~gdp_class) +
+  geom_smooth(method = "lm") +
+  theme_minimal() +
+  labs(x = "Natural Log of GDP per Capita (2017 dollars)", 
+       y = "", 
+       subtitle = "Sustainable Development Index (SDI)", 
+       title = "Relationship between GDP per capita and Sustainability (SDI) 
+       \n from 1990 to 2019")
+  
+```
+
+
+
+Particularly interested in how richer countries are involved with sustainability efforts, we have decided to focus only on the subplot that demonstrates high GDP per capita countries. The following plot demonstrates the relationship between the sustainability (in the form of the SDI) and GDP per capita for a country averaged over the years 1990 to 2019 for high (greater than or equal to 20000 dollars) GDP per capita. After truncating the data, our line assumptions were met indicating that a natural logarithm transformation of GDP per capita was no longer needed. The form of the relationship appears linear with the points following a straight line. The direction is negative with an increase in GDP per capita in 2017 dollars resulting in a decrease in SDI. The strength is moderately strong with a slight amount of scatter around the line. Overall, there does not appear to be any unusual observations in either plots.
+
+
+
+```{r}
+df.clean |> 
+  group_by(country) |> 
+  summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |>
+  filter(mean.gdp > 20000) |>
+  ggplot(aes(x = mean.gdp, y = mean.sdi)) +
+  geom_point()+
+  geom_smooth(method = "lm") +
+  theme_minimal() +
+  labs(x = "High GDP per Capita (2017 dollars)", y = "", subtitle = "Sustainable Development Index (SDI) of High GDP Countries", title = "Relationship between GDP per capita and Sustainability (SDI) \n from 1990 to 2019")
+
+
+```
+
+
+
+The following plot demonstrates the relationship between the sustainability (in the form of the SDI) and GDP per capita for high (greater than or equal to 20000 dollars) GDP per capita countries over the years 1990 to 2019. The form of the relationship appears linear with the points following a straight line. The direction is negative with an increase in the GDP per capita in 2017 dollars resulting in a decrease in SDI. The strength is moderately strong with a slight amount of scatter around the line. Overall, there does not appear to be any unusual observations in the plot. Over time, the frames representing each year shift down and to the right meaning that the sustainability index decreased and the GDP per capita in 2017 dollars increased.
+
+
+
+```{r}
+df.clean |> 
+  group_by(country) |>
+  filter(mean(gdp) > 20000) |>
+  ungroup() |>
+  mutate(year = as.integer(year)) |> #prevents decimal places in subtitle
+  ggplot(aes(x = gdp, y = sdi))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  transition_time(year)+
+  ease_aes('linear')+
+  theme_minimal() +
+  labs(x = "Natural Log of GDP per Capita (2017 dollars)", 
+  y = "Sustainable Development Index (SDI)", 
+  subtitle = "Year: {frame_time}",
+  title = "Change over time in the relationship between GDP per capita and \n sustainability (SDI) from 1990 to 2019")+
+  theme(plot.title = element_text(size = 14, margin = margin(t = 20)))
+```
+
+
+
+## 2.2. Linear Regression
+
+As mentioned previously, we have decided to take the mean GDP per capita across the years 1990 to 2019 so that each point on the following plots represent one country. We decided to present the data in this way for clarity.
+
+The statistical method that we selected was the simple linear regression because our data generally has a simple linear form. A simple linear regression assumes that the relationship between the GDP per capita and the SDI has a linear function.
+
+The estimated regression model follows the following notation:
+
+$$\hat{y} = \hat\beta_0 + \hat\beta_1x $$
+
+$$\hat{y} = 73.18758 - 0.00067x_i$$The $\hat{y}$ is the estimated SDI and $x_i$ is the country's GDP per capita in 2017 dollars. The intercept indicates that a country with GDP per capita of 0 dollars has a predicted sustainability index of 73.18758 units. For every 10,000 2017 dollar increase in a country's GDP per capita, the predicted sustainability index score decreases by 6.7 units.
+
+
+
+```{r}
+df.clean.model <- df.clean |> 
+  group_by(country) |> 
+  summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |>
+  filter(mean.gdp > 20000)
+
+lm.model <- lm(mean.sdi ~ mean.gdp, data = df.clean.model)
+
+summary(lm.model) |> 
+  tidy() |> 
+  mutate(p.value = pvalue(p.value)) |> #reformatting p-values (<0.001)
+  kable(digits = 5, 
+        col.names = c("Term", "Estimate", "Standard Error", "Statistic", "P-value"),
+  caption = "Linear regression model for the relationship between \n average sustainability (SDI) and average Gross Domestic Product (GDP) from 1990 to 2019") |>
+  kable_material()
+```
+
+
+
+(Formatted p-values using Scales package (Label P Values, 2025))
+
+### Assumptions
+
+1.  **Linear Relationship** - When the data is subsetted to only include high (greater than or equal to 20000 dollars) GDP per capita, the relationship is linear.
+
+2.  **Independent Observations** - The observations (identified by each country and year) are reasonably independent.
+
+3.  **Normally Distributed Residuals** - The residuals (difference between the predicted and observed data) are roughly normally distributed (bell-shaped curve).
+
+
+
+    ```{r}
+    ggplot(data = lm.model,
+           aes(x = .resid))+
+      geom_histogram(aes(y = after_stat(density)))+
+      geom_density(color = "dodgerblue", 
+                   lwd = 1.5)+
+      xlab("Residuals")
+    ```
+
+
+
+4.  **Equal Variance of Residuals** - The residuals are roughly spaced out evenly with respect to the fitted values (values along the line).
+
+
+
+    ```{r}
+    lm.model |> 
+      augment() |> 
+      ggplot(aes(x =.fitted,
+                 y = .resid))+
+      geom_point() +
+      geom_hline(yintercept = 0, linetype = "dashed", 
+                 color = "red", lwd = 1.5)
+    ```
+
+
+
+## 2.3 Model Fit
+
+The linear regression model explains about 39% (fitted variance: 98.56726) of the total variance (251.129) in sustainability (SDI). This R-squared value (fitted variance/total variance) is considered to be relatively low, indicating that the quality of the model is less than ideal. Additionally, the mean standard deviation of the residuals (sigma) is 12.5, indicating that there is a fair amount of variability in the residuals.
+
+
+
+```{r}
+lm.model |> 
+  augment() |> 
+  summarize( fitted.variance = var(.fitted),
+             total.variance = var(mean.sdi), 
+         R2 = fitted.variance/total.variance, 
+         sigma = mean(.sigma)) |> 
+  kable(digits = 3, 
+        caption = "Linear regression model for the inear relationship between sustainability (SDI) and GDP per capita", 
+        col.names = c("Fitted Variance", "Total Variance", "R-Squared", "Sigma")) |> 
+  kable_material()
+```
+
+
+
+# 3. Cross-Validation
+
+Cross-validation is a statistical technique used to assess how well a model will generalize to new, unseen data. The process involves partitioning the original dataset into multiple subsets (folds), training the model on most of these subsets, and then testing the model's performance on the remaining subset. This process is repeated multiple times, with each fold serving as the validation set exactly once. Cross-validation helps us understand the stability and reliability of our model's performance and can reveal issues such as overfitting, where a model performs well on training data but poorly on new data.
+
+In k-fold cross-validation, the dataset is randomly divided into k equal-sized folds. For each iteration, k-1 folds are used for training the model, while the remaining fold is used for validation. The performance metric (in our case, R²) is calculated for each fold, providing k different estimates of model performance. The average of these estimates gives us a more robust assessment of how our model is likely to perform on new data.
+
+## 3.1 Implement k-fold cross validation
+
+
+
+```{r}
+#set seed to get the same results each time so that we can talk about results
+#did test this without set seed many times
+set.seed(123)
+
+df.clean.cv <- df.clean |> 
+  group_by(country) |> 
+  summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |>
+  filter(mean.gdp > 20000) |>
+  mutate(fold = sample(rep_len(1:4, length.out = 46),
+                       size = 46)) 
+
+#creating function
+cross.validation <- function(df, k){
+  
+  # separate fold (test) data
+  fold_dat <- df |> 
+    filter(fold == k)
+  
+  # and training data
+  train_dat <- df |> 
+    filter(fold != k)
+  
+  # fit model with training data
+  it_lm <- lm(mean.sdi ~ mean.gdp, 
+               data = train_dat)
+  
+  # generate predictions for the held-out fold data
+  fold_preds <- predict(it_lm, newdata = fold_dat)
+
+  # calculate R2 for the held-out fold data and save it
+  r2 <- var(fold_preds)/var(fold_dat$mean.sdi)
+  
+  # return r2
+  return(r2)
+  
+}
+
+#map
+kfoldcv <- map_dbl(.x = 1:4, 
+               .f = ~cross.validation(df.clean.cv, k = .x)) 
+
+
+#average the R2 values
+mean.r2 <- mean(kfoldcv)
+
+```
+
+
+
+Our implementation used 4-fold cross-validation with all of the high GDP countries (GDP \> \$20,000). We chose 4 folds to ensure each fold contained approximately 11-12 countries, meeting the minimum requirement of at least 10 observations per fold for reliable statistical inference. The map_dbl() function applied our cross-validation function to each fold, training the linear regression model on 75% of the data and testing on the remaining 25% for each iteration.
+
+## 3.2 Plot the Results
+
+
+
+```{r}
+kfoldcv |> 
+  as.data.frame() |> 
+  rename(R2 = kfoldcv) |> 
+  mutate(k = c("1", "2", "3", "4"), .before = R2, 
+         k = fct(k)) |> 
+  ggplot(aes(x = k,
+             y = R2)) + 
+  geom_point()+
+  geom_hline(yintercept = mean.r2, 
+             color = "red", 
+             linetype = "dashed") +
+  geom_text(aes(0, mean.r2, 
+                label = "Mean R2 = 0.488", 
+                vjust = -1, hjust = -0.05),
+            color = "red") +
+  theme_classic()+
+  labs(x = "K Folds", 
+       y = "",
+       subtitle = "R-Squared",
+       title = "K-fold Cross-Validation")
+  
+```
+
+
+
+The average cross-validation R² of 0.488 indicates that our linear regression model explains approximately 49% of the variance in sustainability scores among high GDP countries on average across validation folds. This represents moderate to good predictive power, suggesting the model captures a substantial portion of the relationship between GDP per capita and sustainability performance.
+
+The plot reveals considerable variation in model performance across the four folds, with R² values ranging from approximately 0.20 to 1.18. This substantial variability (nearly a 6-fold difference between the lowest and highest performing folds) indicates that with only approximately 11-12 countries per fold, individual countries with extreme values can dramatically influence model performance within each fold. The large variation indicates that our model's predictive ability is not consistent across different subsets of high GDP countries, suggesting the relationship between GDP and sustainability may not be uniform across all wealthy nations. Some folds may contain countries that are particularly well-predicted by the GDP-sustainability relationship, while others may contain countries that deviate significantly from this pattern.
+
+The cross-validation R² (0.488) is higher than the original linear regression R² (0.392), and one fold achieves an R² above 1.0. While this might initially suggest overfitting, it's more likely due to the small sample sizes in each fold and the specific R² calculation method used (variance of predictions divided by variance of outcomes).
+
+The cross-validation results reveal important limitations for practical application of our model. The wide performance variation (R² ranging from \~0.20 to 1.18 across folds) suggests our model may not be reliable for predicting sustainability outcomes for individual wealthy countries. This inconsistency indicates that country-specific factors beyond GDP per capita play crucial roles in determining sustainability performance among high-income nations. While the model captures the general inverse relationship on average, practitioners should exercise caution when using it for policy predictions or country-specific assessments, as the model's effectiveness appears highly dependent on which subset of wealthy countries is being analyzed.
+
+# 4. Conclusion
+
+
+
+```{r}
+high_gdp_data <- df.clean |>
+  group_by(country) |>
+  summarize(mean.sdi = mean(sdi), mean.gdp = mean(gdp)) |>
+  filter(mean.gdp > 20000)
+
+high_gdp_model <- lm(mean.sdi ~ mean.gdp, data = high_gdp_data)
+
+# Get R² from the original linear regression model
+original_r2 <- summary(high_gdp_model)$r.squared
+```
+
+
+
+Our analysis examined the relationship between GDP per capita and sustainability (SDI) among wealthy nations using linear regression modeling. The linear regression revealed a statistically significant negative relationship, with the model explaining `r round(original_r2, 2)*100` % of the variance in sustainability scores. Specifically, for every \$10,000 increase in GDP per capita, sustainability scores decrease by approximately 6.7 units among high GDP countries.
+
+The cross-validation analysis provided additional insights into model performance and reliability. While the average cross-validation R² of `r round(mean.r2, 3)` suggests reasonable predictive power, the high variability across folds raises concerns about the model's reliability and generalizability. The inconsistent performance suggests that factors beyond GDP per capita may play varying roles in different subsets of wealthy countries, or that the linear relationship assumption may not hold equally well across all high GDP nations.
+
+The cross-validation results indicate that while our linear regression model captures meaningful patterns in the data on average, its performance is highly dependent on the specific countries being analyzed. This suggests that the relationship between GDP and sustainability among wealthy nations is more complex and variable than a simple linear model can fully capture. The negative relationship we identified appears genuine but may not be uniformly applicable across all wealthy countries.
+
+To access our data files and code, please see our GitHub repository at <https://github.com/Theo-777/STAT331-Final-Project.git>.
+
+# 5. Works Cited
+
+FocusEconomics. “GDP per Capita (USD) Archives.” *FocusEconomics*, 28 May 2025, www.focus- economics.com/economic-indicator/gdp-per-capita/.
+
+Gahrib, Sarah. “Rich Countries Have a ‘responsibility’ to Fund Climate Efforts. Here’s Why.” *Global Citizen*, www.globalcitizen.org/en/content/international-climate-finance-explainer/. Accessed 30 May 2025.
+
+“GDP per Capita in Constant PPP Dollars.” *Gapminder*, www.gapminder.org/data/documentation/gd001/. Accessed 30 May 2025.
+
+“GDP per Capita, PPP (Constant 2021 International \$).” *World Bank Open Data*, data.worldbank.org/indicator/NY.GDP.PCAP.PP.KD. Accessed 30 May 2025.
+
+“Label P-Values (e.g. \<0.001, 0.25, p \>= 0.99) - Label_pvalue.” *- Label_pvalue • Scales*, scales.r-lib.org/reference/label_pvalue.html. Accessed 30 May 2025.
+
+Lindgren, Mattias. "Doumentation for GDP per Capita by Purchasing Power Parities." *Gapminder,* https://www.gapminder.org/documentation/documentation/gapdoc001_v9.pdf*.* Accessed 30 May 2025.
+
+“Maddison Project Database 2023.” *University of Groningen*, 24 Sept. 2024, www.rug.nl/ggdc/historicaldevelopment/maddison/releases/maddison-project-database-2023.
+
+“Most Sustainable Countries in the World: Robeco USA.” *Robeco.Com - The Investment Engineers*, 16 Dec. 2024, www.robeco.com/en-us/sustainable-investing/expertise/most-sustainable-countries-in-the-world.
+
+Paddison, Laura. “How the Rich Are Driving Climate Change.” *BBC News*, BBC, 24 Feb. 2022, www.bbc.com/future/article/20211025-climate-how-to-make-the-rich-pay-for-their-carbon-emissions.
+
+“PWT 10.01.” *University of Groningen*, 18 Nov. 2024, www.rug.nl/ggdc/productivity/pwt/.
+
+Sexton, Chrissy. “Wealthy Nations Are Making More Progress toward Sustainable Development.” *Earth.Com*, www.earth.com/news/wealthy-nations-are-making-more-progress-toward-sustainable-development/. Accessed 30 May 2025.
+
+“Sustainable Development Index.” *SUSTAINABLE DEVELOPMENT INDEX*, www.sustainabledevelopmentindex.org/. Accessed 30 May 2025.
+
+U., Jean. "Sustainable Development Index." *Gapminder,* 6 May 2021, https://docs.google.com/spreadsheets/d/1ZkqSheuabUTYIw7d3U-fyV0HB3HnSI9lJyYM4saNc2U/edit?gid=501532268#gid=501532268.
+
